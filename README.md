@@ -1,5 +1,7 @@
 # actions/checkout
 
+Action for checking out a repo
+
 Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/actions/checkout](https://github.com/actions/checkout).
 
 ## Versions

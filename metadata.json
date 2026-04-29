@@ -1,5 +1,6 @@
 {
   "owner": "actions",
   "name": "checkout",
-  "visibility": ""
+  "visibility": "internal",
+  "description": "Action for checking out a repo"
 }
