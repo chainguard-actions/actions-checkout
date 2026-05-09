@@ -1,6 +1,6 @@
 # actions/checkout
 
-Action for checking out a repo
+Checkout a Git repository at a particular version
 
 Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/actions/checkout](https://github.com/actions/checkout).
 

@@ -2,6 +2,6 @@
   "owner": "actions",
   "name": "checkout",
   "visibility": "internal",
-  "description": "Action for checking out a repo",
+  "description": "Checkout a Git repository at a particular version",
   "block_publish": false
 }
