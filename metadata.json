@@ -1,7 +1,0 @@
-{
-  "owner": "actions",
-  "name": "checkout",
-  "visibility": "public",
-  "description": "Checkout a Git repository at a particular version",
-  "block_publish": false
-}
