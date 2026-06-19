@@ -1,0 +1,183 @@
+import {
+  jest,
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterAll
+} from '@jest/globals'
+import * as path from 'path'
+
+const originalGitHubWorkspace = process.env['GITHUB_WORKSPACE']
+const gitHubWorkspace = path.resolve('/checkout-tests/workspace')
+
+// Inputs for mock @actions/core
+let inputs = {} as any
+
+// Mutable mock github context
+const mockGithubContext: any = {
+  ref: 'refs/heads/some-ref',
+  sha: '1234567890123456789012345678901234567890',
+  repo: {owner: 'some-owner', repo: 'some-repo'},
+  eventName: '',
+  payload: {}
+}
+
+// Mock @actions/core before loading input-helper
+jest.unstable_mockModule('@actions/core', () => ({
+  getInput: jest.fn((name: string) => inputs[name]),
+  getBooleanInput: jest.fn((name: string) => inputs[name]),
+  getMultilineInput: jest.fn((name: string) =>
+    inputs[name] ? String(inputs[name]).split('\n').filter(Boolean) : []
+  ),
+  error: jest.fn(),
+  warning: jest.fn(),
+  info: jest.fn(),
+  debug: jest.fn(),
+  setFailed: jest.fn(),
+  setOutput: jest.fn(),
+  setSecret: jest.fn()
+}))
+
+// Mock @actions/github before loading input-helper
+jest.unstable_mockModule('@actions/github', () => ({
+  context: mockGithubContext,
+  getOctokit: jest.fn()
+}))
+
+// Mock fs-helper
+const mockDirectoryExistsSync = jest.fn((p: string) => p === gitHubWorkspace)
+jest.unstable_mockModule('../src/fs-helper.js', () => ({
+  directoryExistsSync: mockDirectoryExistsSync,
+  fileExistsSync: jest.fn()
+}))
+
+// Mock workflow-context-helper
+const mockGetOrganizationId = jest.fn(async () => 123456)
+jest.unstable_mockModule('../src/workflow-context-helper.js', () => ({
+  getOrganizationId: mockGetOrganizationId
+}))
+
+// Dynamic imports after mocking
+const core = await import('@actions/core')
+const inputHelper = await import('../src/input-helper.js')
+type IGitSourceSettings =
+  import('../src/git-source-settings.js').IGitSourceSettings
+
+describe('input-helper tests', () => {
+  beforeAll(() => {
+    // GitHub workspace
+    process.env['GITHUB_WORKSPACE'] = gitHubWorkspace
+  })
+
+  beforeEach(() => {
+    // Reset inputs
+    inputs = {}
+    jest.clearAllMocks()
+    // Re-apply default mocks
+    ;(core.getInput as jest.Mock<any>).mockImplementation(
+      (name: string) => inputs[name]
+    )
+    mockDirectoryExistsSync.mockImplementation(
+      (p: string) => p === gitHubWorkspace
+    )
+    mockGetOrganizationId.mockResolvedValue(123456)
+  })
+
+  afterAll(() => {
+    // Restore GitHub workspace
+    delete process.env['GITHUB_WORKSPACE']
+    if (originalGitHubWorkspace) {
+      process.env['GITHUB_WORKSPACE'] = originalGitHubWorkspace
+    }
+
+    // Restore @actions/github context
+    mockGithubContext.ref = 'refs/heads/some-ref'
+    mockGithubContext.sha = '1234567890123456789012345678901234567890'
+  })
+
+  it('sets defaults', async () => {
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings).toBeTruthy()
+    expect(settings.authToken).toBeFalsy()
+    expect(settings.clean).toBe(true)
+    expect(settings.commit).toBeTruthy()
+    expect(settings.commit).toBe('1234567890123456789012345678901234567890')
+    expect(settings.filter).toBe(undefined)
+    expect(settings.sparseCheckout).toBe(undefined)
+    expect(settings.sparseCheckoutConeMode).toBe(true)
+    expect(settings.fetchDepth).toBe(1)
+    expect(settings.fetchTags).toBe(false)
+    expect(settings.showProgress).toBe(true)
+    expect(settings.lfs).toBe(false)
+    expect(settings.ref).toBe('refs/heads/some-ref')
+    expect(settings.repositoryName).toBe('some-repo')
+    expect(settings.repositoryOwner).toBe('some-owner')
+    expect(settings.repositoryPath).toBe(gitHubWorkspace)
+    expect(settings.setSafeDirectory).toBe(true)
+    expect(settings.allowUnsafePrCheckout).toBe(false)
+  })
+
+  it('qualifies ref', async () => {
+    let originalRef = mockGithubContext.ref
+    try {
+      mockGithubContext.ref = 'some-unqualified-ref'
+      const settings: IGitSourceSettings = await inputHelper.getInputs()
+      expect(settings).toBeTruthy()
+      expect(settings.commit).toBe('1234567890123456789012345678901234567890')
+      expect(settings.ref).toBe('refs/heads/some-unqualified-ref')
+    } finally {
+      mockGithubContext.ref = originalRef
+    }
+  })
+
+  it('requires qualified repo', async () => {
+    inputs.repository = 'some-unqualified-repo'
+    try {
+      await inputHelper.getInputs()
+      throw 'should not reach here'
+    } catch (err) {
+      expect(`(${(err as any).message}`).toMatch(
+        "Invalid repository 'some-unqualified-repo'"
+      )
+    }
+  })
+
+  it('roots path', async () => {
+    inputs.path = 'some-directory/some-subdirectory'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.repositoryPath).toBe(
+      path.join(gitHubWorkspace, 'some-directory', 'some-subdirectory')
+    )
+  })
+
+  it('sets ref to empty when explicit sha', async () => {
+    inputs.ref = '1111111111222222222233333333334444444444'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.ref).toBeFalsy()
+    expect(settings.commit).toBe('1111111111222222222233333333334444444444')
+  })
+
+  it('sets ref to empty when explicit sha-256', async () => {
+    inputs.ref =
+      '1111111111222222222233333333334444444444555555555566666666667777'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.ref).toBeFalsy()
+    expect(settings.commit).toBe(
+      '1111111111222222222233333333334444444444555555555566666666667777'
+    )
+  })
+
+  it('sets sha to empty when explicit ref', async () => {
+    inputs.ref = 'refs/heads/some-other-ref'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.ref).toBe('refs/heads/some-other-ref')
+    expect(settings.commit).toBeFalsy()
+  })
+
+  it('sets workflow organization ID', async () => {
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.workflowOrganizationId).toBe(123456)
+  })
+})

@@ -1,0 +1,55 @@
+name: Test checkout specific ref
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: v4.2.2
+          path: checkout-ref-target
+      - name: Assert checkout directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-ref-target" ]; then
+            echo "FAIL: checkout-ref-target directory not found"
+            exit 1
+          fi
+          echo "PASS: directory exists"
+      - name: Assert commit output is set
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $COMMIT"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
+      - name: Assert ref output matches requested tag
+        env:
+          REF: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "ref: $REF"
+          if [ -z "$REF" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is set to $REF"
+      - name: Assert git log shows single commit (fetch-depth default=1)
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-ref-target"
+          COUNT=$(git log --oneline | wc -l | tr -d ' ')
+          echo "commit count: $COUNT"
+          if [ "$COUNT" -ne 1 ]; then
+            echo "FAIL: expected 1 commit with default fetch-depth, got $COUNT"
+            exit 1
+          fi
+          echo "PASS: single commit fetched as expected"
