@@ -1,0 +1,76 @@
+name: Test actions/checkout - Custom Path
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-custom-path-checkout:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - name: Checkout this repository to access local action
+        uses: actions/checkout@v4
+
+      - name: Checkout public repository to custom path using local action
+        id: checkout
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: v4
+          path: my-repo
+
+      - name: Assert repository is checked out at custom path
+        run: |
+          CUSTOM_PATH="$GITHUB_WORKSPACE/my-repo"
+          echo "Checking custom path: $CUSTOM_PATH"
+          if [ ! -d "$CUSTOM_PATH" ]; then
+            echo "FAIL: custom path directory does not exist: $CUSTOM_PATH"
+            exit 1
+          fi
+          echo "PASS: custom path directory exists"
+
+      - name: Assert .git directory exists at custom path
+        run: |
+          CUSTOM_PATH="$GITHUB_WORKSPACE/my-repo"
+          if [ ! -d "$CUSTOM_PATH/.git" ]; then
+            echo "FAIL: .git directory not found at custom path"
+            exit 1
+          fi
+          echo "PASS: .git directory exists at custom path"
+
+      - name: Assert action.yml exists at custom path
+        run: |
+          CUSTOM_PATH="$GITHUB_WORKSPACE/my-repo"
+          if [ ! -f "$CUSTOM_PATH/action.yml" ]; then
+            echo "FAIL: action.yml not found at custom path"
+            exit 1
+          fi
+          echo "PASS: action.yml found at custom path"
+
+      - name: Assert commit output is a valid SHA
+        env:
+          COMMIT_OUT: ${{ steps.checkout.outputs.commit }}
+        run: |
+          echo "commit output: $COMMIT_OUT"
+          if [ -z "$COMMIT_OUT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$COMMIT_OUT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $COMMIT_OUT"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
+
+      - name: Assert ref output matches expected tag
+        env:
+          REF_OUT: ${{ steps.checkout.outputs.ref }}
+        run: |
+          echo "ref output: $REF_OUT"
+          if [ -z "$REF_OUT" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is set to $REF_OUT"

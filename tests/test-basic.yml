@@ -1,0 +1,45 @@
+name: Test basic checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-target
+      - name: Assert checkout output ref is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "actual ref: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected ref output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert checkout output commit is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "actual commit: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          if [ ${#ACTUAL} -ne 40 ]; then
+            echo "FAIL: expected commit to be a 40-char SHA, got: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert repository files exist
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-target/action.yml" ]; then
+            echo "FAIL: expected action.yml not found in checkout-target"
+            exit 1
+          fi
+          echo "PASS"

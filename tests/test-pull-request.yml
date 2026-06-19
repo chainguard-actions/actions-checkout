@@ -1,0 +1,68 @@
+name: Test actions/checkout - Pull Request Event
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-pull-request-checkout:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_HEAD_REF: releases/v4
+      GITHUB_BASE_REF: main
+    steps:
+      - name: Checkout this repository to access local action
+        uses: actions/checkout@v4
+
+      - name: Checkout public repository for pull request event using local action
+        id: checkout
+        uses: ./__ACTION_SRC__
+        with:
+          repository: actions/checkout
+          ref: main
+          path: pr-checkout
+
+      - name: Assert ref output is set
+        env:
+          REF_OUT: ${{ steps.checkout.outputs.ref }}
+        run: |
+          echo "ref output: $REF_OUT"
+          if [ -z "$REF_OUT" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is set"
+
+      - name: Assert commit output is a valid SHA
+        env:
+          COMMIT_OUT: ${{ steps.checkout.outputs.commit }}
+        run: |
+          echo "commit output: $COMMIT_OUT"
+          if [ -z "$COMMIT_OUT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$COMMIT_OUT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $COMMIT_OUT"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
+
+      - name: Assert repository files exist in path
+        run: |
+          echo "Checkout path contents:"
+          ls -la "$GITHUB_WORKSPACE/pr-checkout"
+          if [ ! -f "$GITHUB_WORKSPACE/pr-checkout/action.yml" ]; then
+            echo "FAIL: action.yml not found in pr-checkout path"
+            exit 1
+          fi
+          echo "PASS: repository files are present"
+
+      - name: Assert .git directory exists in path
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/pr-checkout/.git" ]; then
+            echo "FAIL: .git directory not found in pr-checkout"
+            exit 1
+          fi
+          echo "PASS: .git directory exists"

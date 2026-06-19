@@ -1,0 +1,68 @@
+name: Test actions/checkout - Sparse Checkout
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-sparse-checkout:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - name: Checkout this repository to access local action
+        uses: actions/checkout@v4
+
+      - name: Checkout public repository with sparse checkout using local action
+        id: checkout
+        uses: ./__ACTION_SRC__
+        with:
+          repository: actions/checkout
+          ref: main
+          path: sparse-checkout-test
+          sparse-checkout: |
+            action.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Assert commit output is set
+        env:
+          COMMIT_OUT: ${{ steps.checkout.outputs.commit }}
+        run: |
+          echo "commit output: $COMMIT_OUT"
+          if [ -z "$COMMIT_OUT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$COMMIT_OUT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $COMMIT_OUT"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
+
+      - name: Assert action.yml is present (included in sparse checkout)
+        run: |
+          echo "Sparse checkout path contents:"
+          ls -la "$GITHUB_WORKSPACE/sparse-checkout-test"
+          if [ ! -f "$GITHUB_WORKSPACE/sparse-checkout-test/action.yml" ]; then
+            echo "FAIL: action.yml not found in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: action.yml is present in sparse checkout"
+
+      - name: Assert .git directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/sparse-checkout-test/.git" ]; then
+            echo "FAIL: .git directory not found in sparse checkout path"
+            exit 1
+          fi
+          echo "PASS: .git directory exists"
+
+      - name: Assert sparse checkout is configured
+        run: |
+          SPARSE=$(git -C "$GITHUB_WORKSPACE/sparse-checkout-test" config core.sparseCheckout 2>/dev/null || echo "false")
+          echo "core.sparseCheckout: $SPARSE"
+          if [ "$SPARSE" != "true" ]; then
+            echo "FAIL: expected core.sparseCheckout=true, got: $SPARSE"
+            exit 1
+          fi
+          echo "PASS: sparse checkout is configured"

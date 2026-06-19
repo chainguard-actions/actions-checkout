@@ -1,0 +1,49 @@
+name: Test checkout at specific ref
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: v4.2.2
+          path: checkout-ref-target
+      - name: Assert ref output matches requested tag
+        env:
+          ACTUAL: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "actual ref: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected ref output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert commit SHA is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "actual commit: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          if [ ${#ACTUAL} -ne 40 ]; then
+            echo "FAIL: expected 40-char SHA, got length ${#ACTUAL}: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert checked-out files exist at path
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-ref-target" ]; then
+            echo "FAIL: checkout-ref-target directory not found"
+            exit 1
+          fi
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-ref-target/action.yml" ]; then
+            echo "FAIL: action.yml not found in checkout-ref-target"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,35 @@
+name: Test checkout with full history fetch-depth 0
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          fetch-depth: 0
+          path: checkout-full-history
+      - name: Assert commit output is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "actual commit: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert full history is present (more than 1 commit)
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-full-history"
+          COMMIT_COUNT=$(git log --oneline | wc -l)
+          echo "commit count: $COMMIT_COUNT"
+          if [ "$COMMIT_COUNT" -le 1 ]; then
+            echo "FAIL: expected more than 1 commit in full history clone, got $COMMIT_COUNT"
+            exit 1
+          fi
+          echo "PASS"
