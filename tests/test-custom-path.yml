@@ -1,0 +1,36 @@
+name: Test checkout to custom path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: my-checkout-dir
+      - name: Assert custom path directory exists
+        run: |
+          echo "Checking for custom path: $GITHUB_WORKSPACE/my-checkout-dir"
+          if [ ! -d "$GITHUB_WORKSPACE/my-checkout-dir" ]; then
+            echo "FAIL: custom path directory does not exist"
+            exit 1
+          fi
+          if [ ! -f "$GITHUB_WORKSPACE/my-checkout-dir/action.yml" ]; then
+            echo "FAIL: action.yml not found in custom path"
+            exit 1
+          fi
+          echo "PASS: custom path checkout succeeded"
+      - name: Assert commit output is set
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"

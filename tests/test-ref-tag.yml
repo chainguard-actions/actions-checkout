@@ -1,0 +1,43 @@
+name: Test checkout at specific tag
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/tags/v4.0.0
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: v4.0.0
+          path: tag-checkout
+      - name: Assert ref output matches tag
+        env:
+          REF: ${{ steps.action.outputs.ref }}
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "ref: $REF"
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          if [ -z "$REF" ]; then
+            echo "FAIL: expected ref output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: tag checkout succeeded with ref=$REF commit=$COMMIT"
+      - name: Assert checked out at correct tag
+        run: |
+          cd "$GITHUB_WORKSPACE/tag-checkout"
+          TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+          echo "tag at HEAD: $TAG"
+          if [ "$TAG" != "v4.0.0" ]; then
+            echo "FAIL: expected tag v4.0.0, got '$TAG'"
+            exit 1
+          fi
+          echo "PASS: HEAD is at tag v4.0.0"
