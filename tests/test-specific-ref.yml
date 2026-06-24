@@ -1,0 +1,55 @@
+name: Test checkout specific ref
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: v4.0.0
+          path: checkout-ref-target
+      - name: Assert checkout directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-ref-target" ]; then
+            echo "FAIL: checkout-ref-target directory not found"
+            exit 1
+          fi
+          echo "PASS: directory exists"
+      - name: Assert ref output matches requested ref
+        env:
+          ACTUAL: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "actual ref: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is non-empty"
+      - name: Assert commit output is a valid SHA
+        env:
+          ACTUAL: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "actual commit: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if [ ${#ACTUAL} -ne 40 ]; then
+            echo "FAIL: commit SHA should be 40 characters, got ${#ACTUAL}"
+            exit 1
+          fi
+          echo "PASS: commit SHA is valid"
+      - name: Assert git log shows correct tag
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-ref-target"
+          COMMIT=$(git rev-parse HEAD)
+          echo "HEAD commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: could not get HEAD commit"
+            exit 1
+          fi
+          echo "PASS: git repo is valid"

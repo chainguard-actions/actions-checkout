@@ -1,0 +1,46 @@
+name: Test checkout with full history
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-full-history
+          fetch-depth: 0
+      - name: Assert checkout directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-full-history" ]; then
+            echo "FAIL: checkout-full-history directory not found"
+            exit 1
+          fi
+          echo "PASS: directory exists"
+      - name: Assert full history was fetched
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-full-history"
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          echo "Total commits: $COMMIT_COUNT"
+          if [ "$COMMIT_COUNT" -le 1 ]; then
+            echo "FAIL: expected more than 1 commit with fetch-depth=0, got $COMMIT_COUNT"
+            exit 1
+          fi
+          echo "PASS: full history fetched with $COMMIT_COUNT commits"
+      - name: Assert commit output is valid
+        env:
+          ACTUAL: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "actual commit: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if [ ${#ACTUAL} -ne 40 ]; then
+            echo "FAIL: commit SHA should be 40 characters, got ${#ACTUAL}"
+            exit 1
+          fi
+          echo "PASS: commit SHA is valid"
