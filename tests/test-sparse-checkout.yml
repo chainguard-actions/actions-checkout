@@ -1,0 +1,47 @@
+name: Test sparse checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-sparse
+          sparse-checkout: |
+            action.yml
+          sparse-checkout-cone-mode: false
+      - name: Assert outputs are set
+        env:
+          ACTUAL_REF: ${{ steps.action.outputs.ref }}
+          ACTUAL_COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "actual ref: $ACTUAL_REF"
+          echo "actual commit: $ACTUAL_COMMIT"
+          if [ -z "$ACTUAL_REF" ]; then
+            echo "FAIL: expected ref output to be non-empty"
+            exit 1
+          fi
+          if [ -z "$ACTUAL_COMMIT" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: outputs set"
+      - name: Assert sparse checkout includes action.yml
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-sparse/action.yml" ]; then
+            echo "FAIL: expected action.yml not found in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: action.yml present in sparse checkout"
+      - name: Assert sparse checkout excludes src directory
+        run: |
+          if [ -d "$GITHUB_WORKSPACE/checkout-sparse/src" ]; then
+            echo "FAIL: src directory should not be present in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: src directory correctly excluded from sparse checkout"
