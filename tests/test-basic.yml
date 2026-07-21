@@ -6,20 +6,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         with:
           repository: actions/checkout
           ref: main
           path: checkout-target
+
       - name: Assert checkout directory exists
         run: |
-          echo "Checking checkout-target directory..."
           if [ ! -d "$GITHUB_WORKSPACE/checkout-target" ]; then
             echo "FAIL: checkout-target directory not found"
             exit 1
           fi
-          echo "PASS: directory exists"
+          echo "PASS: checkout-target directory exists"
+
       - name: Assert action.yml exists in checked-out repo
         run: |
           if [ ! -f "$GITHUB_WORKSPACE/checkout-target/action.yml" ]; then
@@ -27,6 +29,7 @@ jobs:
             exit 1
           fi
           echo "PASS: action.yml found"
+
       - name: Assert commit output is set
         env:
           COMMIT: ${{ steps.action.outputs.commit }}
@@ -42,6 +45,7 @@ jobs:
             exit 1
           fi
           echo "PASS: commit output is a valid SHA"
+
       - name: Assert ref output is set
         env:
           REF: ${{ steps.action.outputs.ref }}
