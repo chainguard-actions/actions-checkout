@@ -1,4 +1,4 @@
-name: Test basic checkout
+name: Test checkout of a different repository
 on:
   workflow_dispatch:
 jobs:
@@ -10,27 +10,28 @@ jobs:
       - id: action
         uses: .
         with:
-          repository: actions/checkout
+          repository: actions/toolkit
           ref: main
-          path: checkout-output
+          fetch-depth: 1
+          path: checkout-other
 
-      - name: Assert path exists
+      - name: Assert checkout directory exists
         run: |
-          if [ ! -d "$GITHUB_WORKSPACE/checkout-output" ]; then
-            echo "FAIL: checkout-output directory not found"
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-other" ]; then
+            echo "FAIL: checkout-other directory not found"
             exit 1
           fi
-          echo "PASS: checkout-output directory exists"
+          echo "PASS: checkout-other directory exists"
 
-      - name: Assert action.yml exists in checkout
+      - name: Assert package.json exists (actions/toolkit root file)
         run: |
-          if [ ! -f "$GITHUB_WORKSPACE/checkout-output/action.yml" ]; then
-            echo "FAIL: action.yml not found in checkout-output"
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-other/package.json" ]; then
+            echo "FAIL: package.json not found in checkout-other (actions/toolkit)"
             exit 1
           fi
-          echo "PASS: action.yml found"
+          echo "PASS: package.json found in actions/toolkit checkout"
 
-      - name: Assert commit output is set
+      - name: Assert commit output is a valid SHA
         env:
           ACTUAL: ${{ steps.action.outputs.commit }}
         run: |
@@ -39,7 +40,6 @@ jobs:
             echo "FAIL: commit output is empty"
             exit 1
           fi
-          # Verify it looks like a SHA (40 hex chars)
           if ! echo "$ACTUAL" | grep -qE '^[0-9a-f]{40}$'; then
             echo "FAIL: commit output does not look like a SHA: $ACTUAL"
             exit 1

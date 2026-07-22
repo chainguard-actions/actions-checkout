@@ -1,4 +1,4 @@
-name: Test checkout with full history
+name: Test checkout with full history and tags
 on:
   workflow_dispatch:
 jobs:
@@ -6,31 +6,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         with:
           repository: actions/checkout
           ref: main
-          path: checkout-full-history
+          path: checkout-full
           fetch-depth: 0
+          fetch-tags: true
+
       - name: Assert checkout directory exists
         run: |
-          if [ ! -d "$GITHUB_WORKSPACE/checkout-full-history" ]; then
-            echo "FAIL: checkout-full-history directory not found"
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-full" ]; then
+            echo "FAIL: checkout-full directory not found"
             exit 1
           fi
-          echo "PASS: directory exists"
-      - name: Assert full history was fetched
+          echo "PASS: checkout-full directory exists"
+
+      - name: Assert full history is available
         run: |
-          cd "$GITHUB_WORKSPACE/checkout-full-history"
-          COMMIT_COUNT=$(git rev-list --count HEAD)
-          echo "Total commits: $COMMIT_COUNT"
-          if [ "$COMMIT_COUNT" -le 1 ]; then
-            echo "FAIL: expected more than 1 commit with fetch-depth=0, got $COMMIT_COUNT"
+          cd "$GITHUB_WORKSPACE/checkout-full"
+          COUNT=$(git rev-list --count HEAD)
+          echo "Commit count: $COUNT"
+          if [ "$COUNT" -lt 2 ]; then
+            echo "FAIL: expected more than 1 commit in full history"
             exit 1
           fi
-          echo "PASS: full history fetched with $COMMIT_COUNT commits"
-      - name: Assert commit output is valid
+          echo "PASS: git history has $COUNT commits"
+
+      - name: Assert commit output is a valid SHA
         env:
           ACTUAL: ${{ steps.action.outputs.commit }}
         run: |
@@ -39,8 +44,19 @@ jobs:
             echo "FAIL: commit output is empty"
             exit 1
           fi
-          if [ ${#ACTUAL} -ne 40 ]; then
-            echo "FAIL: commit SHA should be 40 characters, got ${#ACTUAL}"
+          if ! echo "$ACTUAL" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $ACTUAL"
             exit 1
           fi
-          echo "PASS: commit SHA is valid"
+          echo "PASS: commit output is a valid SHA"
+
+      - name: Assert ref output is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "actual ref: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is set"
