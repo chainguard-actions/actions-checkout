@@ -11,38 +11,44 @@ jobs:
         with:
           repository: actions/checkout
           ref: main
-          path: checkout-target
+          path: checkout-output
       - name: Assert checkout directory exists
         run: |
-          echo "Checking checkout-target directory..."
-          if [ ! -d "$GITHUB_WORKSPACE/checkout-target" ]; then
-            echo "FAIL: checkout-target directory not found"
+          echo "Checking checkout-output directory..."
+          ls -la "$GITHUB_WORKSPACE/" || true
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-output" ]; then
+            echo "FAIL: checkout-output directory not found"
             exit 1
           fi
-          echo "PASS: directory exists"
-      - name: Assert action.yml exists in checkout
+          echo "PASS: checkout-output directory exists"
+      - name: Assert action.yml is present in checked-out repo
         run: |
-          if [ ! -f "$GITHUB_WORKSPACE/checkout-target/action.yml" ]; then
-            echo "FAIL: action.yml not found in checkout-target"
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-output/action.yml" ]; then
+            echo "FAIL: action.yml not found in checkout-output"
             exit 1
           fi
           echo "PASS: action.yml found"
       - name: Assert commit output is set
         env:
-          ACTUAL: ${{ steps.action.outputs.commit }}
+          COMMIT: ${{ steps.action.outputs.commit }}
         run: |
-          echo "actual commit: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
             echo "FAIL: commit output is empty"
             exit 1
           fi
-          echo "PASS: commit output is set"
+          # Verify it looks like a SHA (40 hex chars)
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $COMMIT"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
       - name: Assert ref output is set
         env:
-          ACTUAL: ${{ steps.action.outputs.ref }}
+          REF: ${{ steps.action.outputs.ref }}
         run: |
-          echo "actual ref: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
+          echo "ref: $REF"
+          if [ -z "$REF" ]; then
             echo "FAIL: ref output is empty"
             exit 1
           fi

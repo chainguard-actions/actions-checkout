@@ -1,4 +1,4 @@
-name: Test checkout at specific ref
+name: Test checkout specific ref
 on:
   workflow_dispatch:
 jobs:
@@ -10,47 +10,54 @@ jobs:
         uses: .
         with:
           repository: actions/checkout
-          ref: v4.2.2
-          path: checkout-target
+          ref: main
+          path: checkout-ref-output
       - name: Assert checkout directory exists
         run: |
-          if [ ! -d "$GITHUB_WORKSPACE/checkout-target" ]; then
-            echo "FAIL: checkout-target directory not found"
+          echo "Checking checkout-ref-output directory..."
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-ref-output" ]; then
+            echo "FAIL: checkout-ref-output directory not found"
             exit 1
           fi
-          echo "PASS: directory exists"
-      - name: Assert commit output is set
-        env:
-          ACTUAL: ${{ steps.action.outputs.commit }}
+          echo "PASS: checkout-ref-output directory exists"
+      - name: Assert action.yml is present
         run: |
-          echo "actual commit: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-ref-output/action.yml" ]; then
+            echo "FAIL: action.yml not found in checkout-ref-output"
+            exit 1
+          fi
+          echo "PASS: action.yml found"
+      - name: Assert commit output is a valid SHA
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
             echo "FAIL: commit output is empty"
             exit 1
           fi
-          # Verify it looks like a SHA (40 hex chars)
-          if ! echo "$ACTUAL" | grep -qE '^[0-9a-f]{40}$'; then
-            echo "FAIL: commit output does not look like a SHA: $ACTUAL"
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $COMMIT"
             exit 1
           fi
           echo "PASS: commit output is a valid SHA"
-      - name: Assert ref output matches requested tag
+      - name: Assert ref output is set
         env:
-          ACTUAL: ${{ steps.action.outputs.ref }}
+          REF: ${{ steps.action.outputs.ref }}
         run: |
-          echo "actual ref: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
+          echo "ref: $REF"
+          if [ -z "$REF" ]; then
             echo "FAIL: ref output is empty"
             exit 1
           fi
-          echo "PASS: ref output is set to $ACTUAL"
-      - name: Assert git log shows correct commit
+          echo "PASS: ref output is set"
+      - name: Assert checked out branch is main
         run: |
-          cd "$GITHUB_WORKSPACE/checkout-target"
-          COMMIT=$(git rev-parse HEAD)
-          echo "HEAD commit: $COMMIT"
-          if [ -z "$COMMIT" ]; then
-            echo "FAIL: could not get HEAD commit"
+          cd "$GITHUB_WORKSPACE/checkout-ref-output"
+          BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+          echo "branch: $BRANCH"
+          if [ "$BRANCH" != "main" ]; then
+            echo "FAIL: expected branch 'main', got '$BRANCH'"
             exit 1
           fi
-          echo "PASS: git log works"
+          echo "PASS: checked out on main branch"
