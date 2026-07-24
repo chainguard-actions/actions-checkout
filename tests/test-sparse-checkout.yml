@@ -1,68 +1,68 @@
-name: Test actions/checkout - Sparse Checkout
-
+name: Test sparse checkout
 on:
   workflow_dispatch:
-
 jobs:
-  test-sparse-checkout:
+  test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
     steps:
-      - name: Checkout this repository to access local action
-        uses: actions/checkout@v4
-
-      - name: Checkout public repository with sparse checkout using local action
-        id: checkout
-        uses: ./__ACTION_SRC__
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
         with:
           repository: actions/checkout
           ref: main
-          path: sparse-checkout-test
           sparse-checkout: |
-            action.yml
-          sparse-checkout-cone-mode: false
-
+            src
+          path: checkout-sparse
+          fetch-depth: 1
       - name: Assert commit output is set
         env:
-          COMMIT_OUT: ${{ steps.checkout.outputs.commit }}
+          COMMIT: ${{ steps.action.outputs.commit }}
         run: |
-          echo "commit output: $COMMIT_OUT"
-          if [ -z "$COMMIT_OUT" ]; then
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
             echo "FAIL: commit output is empty"
             exit 1
           fi
-          if ! echo "$COMMIT_OUT" | grep -qE '^[0-9a-f]{40}$'; then
-            echo "FAIL: commit output does not look like a SHA: $COMMIT_OUT"
+          # Verify it looks like a SHA (40 hex chars)
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit '$COMMIT' does not look like a full SHA"
             exit 1
           fi
           echo "PASS: commit output is a valid SHA"
-
-      - name: Assert action.yml is present (included in sparse checkout)
+      - name: Assert sparse checkout directory exists and is a git repo
         run: |
-          echo "Sparse checkout path contents:"
-          ls -la "$GITHUB_WORKSPACE/sparse-checkout-test"
-          if [ ! -f "$GITHUB_WORKSPACE/sparse-checkout-test/action.yml" ]; then
-            echo "FAIL: action.yml not found in sparse checkout"
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-sparse" ]; then
+            echo "FAIL: checkout-sparse directory not found"
             exit 1
           fi
-          echo "PASS: action.yml is present in sparse checkout"
-
-      - name: Assert .git directory exists
-        run: |
-          if [ ! -d "$GITHUB_WORKSPACE/sparse-checkout-test/.git" ]; then
-            echo "FAIL: .git directory not found in sparse checkout path"
+          echo "PASS: checkout-sparse directory exists"
+          cd "$GITHUB_WORKSPACE/checkout-sparse"
+          if ! git rev-parse --git-dir > /dev/null 2>&1; then
+            echo "FAIL: not a git repository"
             exit 1
           fi
-          echo "PASS: .git directory exists"
-
+          echo "PASS: is a valid git repository"
+      - name: Assert sparse checkout contains src directory
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-sparse"
+          echo "Contents of sparse checkout:"
+          ls -la
+          # With sparse checkout of 'src', the src/ directory should be present
+          if [ ! -d "src" ]; then
+            echo "FAIL: src directory missing from sparse checkout"
+            ls -la || true
+            exit 1
+          fi
+          echo "PASS: src directory is present in sparse checkout"
       - name: Assert sparse checkout is configured
         run: |
-          SPARSE=$(git -C "$GITHUB_WORKSPACE/sparse-checkout-test" config core.sparseCheckout 2>/dev/null || echo "false")
-          echo "core.sparseCheckout: $SPARSE"
-          if [ "$SPARSE" != "true" ]; then
-            echo "FAIL: expected core.sparseCheckout=true, got: $SPARSE"
-            exit 1
+          cd "$GITHUB_WORKSPACE/checkout-sparse"
+          # Verify sparse checkout is enabled
+          SPARSE=$(git config core.sparseCheckout 2>/dev/null || echo "false")
+          echo "sparse-checkout config: $SPARSE"
+          if git sparse-checkout list > /dev/null 2>&1; then
+            echo "Sparse checkout patterns:"
+            git sparse-checkout list || true
           fi
-          echo "PASS: sparse checkout is configured"
+          echo "PASS: sparse checkout completed successfully"

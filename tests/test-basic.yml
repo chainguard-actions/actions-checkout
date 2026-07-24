@@ -11,35 +11,55 @@ jobs:
         with:
           repository: actions/checkout
           ref: main
-          path: checkout-target
-      - name: Assert checkout output ref is set
+          path: checkout-basic
+          fetch-depth: 1
+      - name: Assert commit output is set
         env:
-          ACTUAL: ${{ steps.action.outputs.ref }}
+          COMMIT: ${{ steps.action.outputs.commit }}
         run: |
-          echo "actual ref: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
-            echo "FAIL: expected ref output to be non-empty"
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: commit output is empty"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert checkout output commit is set
+          # Verify it looks like a SHA (40 hex chars)
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit '$COMMIT' does not look like a full SHA"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
+      - name: Assert ref output is set
         env:
-          ACTUAL: ${{ steps.action.outputs.commit }}
+          REF: ${{ steps.action.outputs.ref }}
         run: |
-          echo "actual commit: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
-            echo "FAIL: expected commit output to be non-empty"
+          echo "ref: $REF"
+          if [ -z "$REF" ]; then
+            echo "FAIL: ref output is empty"
             exit 1
           fi
-          if [ ${#ACTUAL} -ne 40 ]; then
-            echo "FAIL: expected commit to be a 40-char SHA, got: $ACTUAL"
-            exit 1
-          fi
-          echo "PASS"
-      - name: Assert repository files exist
+          echo "PASS: ref output is set"
+      - name: Assert checkout directory exists and is a git repo
         run: |
-          if [ ! -f "$GITHUB_WORKSPACE/checkout-target/action.yml" ]; then
-            echo "FAIL: expected action.yml not found in checkout-target"
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-basic" ]; then
+            echo "FAIL: checkout-basic directory not found"
             exit 1
           fi
-          echo "PASS"
+          echo "PASS: checkout-basic directory exists"
+          cd "$GITHUB_WORKSPACE/checkout-basic"
+          if ! git rev-parse --git-dir > /dev/null 2>&1; then
+            echo "FAIL: checkout-basic is not a git repository"
+            exit 1
+          fi
+          echo "PASS: checkout-basic is a valid git repository"
+      - name: Assert checked-out repo has action.yml
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-basic"
+          echo "Contents of checkout-basic:"
+          ls -la
+          # actions/checkout has action.yml at root
+          if [ ! -f "action.yml" ]; then
+            echo "FAIL: action.yml not found in checkout-basic"
+            ls -la || true
+            exit 1
+          fi
+          echo "PASS: action.yml found in checkout-basic"

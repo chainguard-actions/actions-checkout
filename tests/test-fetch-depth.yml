@@ -1,4 +1,4 @@
-name: Test checkout with full history fetch-depth 0
+name: Test checkout with full history
 on:
   workflow_dispatch:
 jobs:
@@ -15,21 +15,49 @@ jobs:
           path: checkout-full-history
       - name: Assert commit output is set
         env:
-          ACTUAL: ${{ steps.action.outputs.commit }}
+          COMMIT: ${{ steps.action.outputs.commit }}
         run: |
-          echo "actual commit: $ACTUAL"
-          if [ -z "$ACTUAL" ]; then
-            echo "FAIL: expected commit output to be non-empty"
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: commit output is empty"
             exit 1
           fi
-          echo "PASS"
-      - name: Assert full history is present (more than 1 commit)
+          # Verify it looks like a SHA (40 hex chars)
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit '$COMMIT' does not look like a full SHA"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
+      - name: Assert checkout directory is a git repo
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-full-history" ]; then
+            echo "FAIL: checkout-full-history directory not found"
+            exit 1
+          fi
+          cd "$GITHUB_WORKSPACE/checkout-full-history"
+          if ! git rev-parse --git-dir > /dev/null 2>&1; then
+            echo "FAIL: not a git repository"
+            exit 1
+          fi
+          echo "PASS: is a valid git repository"
+      - name: Assert full history is available
         run: |
           cd "$GITHUB_WORKSPACE/checkout-full-history"
-          COMMIT_COUNT=$(git log --oneline | wc -l)
-          echo "commit count: $COMMIT_COUNT"
-          if [ "$COMMIT_COUNT" -le 1 ]; then
-            echo "FAIL: expected more than 1 commit in full history clone, got $COMMIT_COUNT"
+          COUNT=$(git log --oneline | wc -l)
+          echo "commit count: $COUNT"
+          if [ "$COUNT" -lt 2 ]; then
+            echo "FAIL: expected more than 1 commit in history for full fetch"
             exit 1
           fi
-          echo "PASS"
+          echo "PASS: git history is available ($COUNT commits)"
+      - name: Assert repository is not shallow with fetch-depth 0
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-full-history"
+          # With fetch-depth: 0, we should have the full history (not shallow)
+          IS_SHALLOW=$(git rev-parse --is-shallow-repository 2>/dev/null || echo "unknown")
+          echo "is-shallow: $IS_SHALLOW"
+          if [ "$IS_SHALLOW" = "true" ]; then
+            echo "FAIL: repository is shallow despite fetch-depth: 0"
+            exit 1
+          fi
+          echo "PASS: repository is not shallow (full history fetched)"
