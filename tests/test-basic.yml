@@ -1,0 +1,58 @@
+name: Test basic checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-basic
+
+      - name: Assert path exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-basic" ]; then
+            echo "FAIL: checkout-basic directory not found"
+            exit 1
+          fi
+          echo "PASS: checkout-basic directory exists"
+
+      - name: Assert action.yml exists in checkout
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-basic/action.yml" ]; then
+            echo "FAIL: action.yml not found in checkout"
+            exit 1
+          fi
+          echo "PASS: action.yml found in checkout"
+
+      - name: Assert commit output is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "actual commit: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          # Verify it looks like a SHA (40 hex chars)
+          if ! echo "$ACTUAL" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
+
+      - name: Assert ref output is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "actual ref: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is set"

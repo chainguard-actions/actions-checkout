@@ -1,0 +1,67 @@
+name: Test checkout with custom path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/act-harness
+      GITHUB_EVENT_NAME: push
+      RUNNER_TEMP: /tmp/runner-temp
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare local git repo and configure URL rewriting
+        run: |
+          mkdir -p /tmp/runner-temp
+          mkdir -p /tmp/git-repos/testowner
+
+          # Create a bare git repo
+          git init --bare /tmp/git-repos/testowner/testrepo
+
+          # Populate the repo with a commit
+          git clone /tmp/git-repos/testowner/testrepo /tmp/git-work
+          cd /tmp/git-work
+          git config user.email "test@test.com"
+          git config user.name "Test User"
+          echo "# Test Repo" > README.md
+          echo "name: test" > marker.txt
+          git add .
+          git commit -m "Initial commit"
+          git push origin HEAD:main
+
+          # Configure git to rewrite http://localhost:8765/ to file:///tmp/git-repos/
+          git config --global url."file:///tmp/git-repos/".insteadOf "http://localhost:8765/"
+
+      - id: action
+        uses: .
+        with:
+          repository: testowner/testrepo
+          ref: main
+          github-server-url: http://localhost:8765
+          token: test-token
+          path: my-custom-repo
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Assert repository was checked out at custom path
+        run: |
+          TARGET="$GITHUB_WORKSPACE/my-custom-repo"
+          echo "Checking for marker.txt at: $TARGET/marker.txt"
+          if [ ! -f "$TARGET/marker.txt" ]; then
+            echo "FAIL: marker.txt not found at custom path $TARGET"
+            ls -la "$TARGET" || echo "Directory does not exist"
+            exit 1
+          fi
+          echo "PASS: repository checked out at custom path"
+
+      - name: Assert commit output is non-empty
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"

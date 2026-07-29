@@ -1,0 +1,88 @@
+name: Test checkout with clean disabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/act-harness
+      GITHUB_EVENT_NAME: push
+      RUNNER_TEMP: /tmp/runner-temp
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare local git repo and configure URL rewriting
+        run: |
+          mkdir -p /tmp/runner-temp
+          mkdir -p /tmp/git-repos/testowner
+
+          # Create a bare git repo
+          git init --bare /tmp/git-repos/testowner/testrepo
+
+          # Populate the repo with a commit
+          git clone /tmp/git-repos/testowner/testrepo /tmp/git-work
+          cd /tmp/git-work
+          git config user.email "test@test.com"
+          git config user.name "Test User"
+          echo "# Test Repo" > README.md
+          echo "name: test" > marker.txt
+          git add .
+          git commit -m "Initial commit"
+          git push origin HEAD:main
+
+          # Configure git to rewrite http://localhost:8765/ to file:///tmp/git-repos/
+          git config --global url."file:///tmp/git-repos/".insteadOf "http://localhost:8765/"
+
+      - name: Do initial checkout into a subdirectory
+        uses: .
+        with:
+          repository: testowner/testrepo
+          ref: main
+          github-server-url: http://localhost:8765
+          token: test-token
+          path: my-repo
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Create an untracked file in the checkout directory
+        run: |
+          echo "untracked content" > "$GITHUB_WORKSPACE/my-repo/untracked-file.txt"
+
+      - id: action
+        uses: .
+        with:
+          repository: testowner/testrepo
+          ref: main
+          github-server-url: http://localhost:8765
+          token: test-token
+          path: my-repo
+          clean: false
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Assert untracked file still exists (clean=false)
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/my-repo/untracked-file.txt" ]; then
+            echo "FAIL: untracked file was removed despite clean=false"
+            exit 1
+          fi
+          echo "PASS: untracked file preserved with clean=false"
+
+      - name: Assert repository was checked out
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/my-repo/marker.txt" ]; then
+            echo "FAIL: marker.txt not found in checkout path after checkout"
+            exit 1
+          fi
+          echo "PASS: repository checked out successfully"
+
+      - name: Assert commit output is non-empty
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"

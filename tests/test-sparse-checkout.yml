@@ -1,0 +1,57 @@
+name: Test sparse checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          sparse-checkout: |
+            action.yml
+          sparse-checkout-cone-mode: false
+          path: checkout-sparse
+
+      - name: Assert sparse checkout directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-sparse" ]; then
+            echo "FAIL: checkout-sparse directory not found"
+            exit 1
+          fi
+          echo "PASS: checkout-sparse directory exists"
+
+      - name: Assert action.yml is present in sparse checkout
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-sparse/action.yml" ]; then
+            echo "FAIL: action.yml not found in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: action.yml found in sparse checkout"
+
+      - name: Assert dist directory is absent (sparse checkout)
+        run: |
+          if [ -d "$GITHUB_WORKSPACE/checkout-sparse/dist" ]; then
+            echo "FAIL: dist directory should not be present in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: dist directory correctly absent from sparse checkout"
+
+      - name: Assert commit output is a valid SHA
+        env:
+          ACTUAL: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "actual commit: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
