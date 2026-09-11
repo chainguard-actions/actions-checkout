@@ -8,6 +8,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
+| v4 | [`v4`](https://github.com/chainguard-actions/actions-checkout/tree/v4) | [`11d5960`](https://github.com/actions/checkout/commit/11d5960a326750d5838078e36cf38b85af677262) |
 | v4.3.1 | [`v4.3.1`](https://github.com/chainguard-actions/actions-checkout/tree/v4.3.1) | [`34e1148`](https://github.com/actions/checkout/commit/34e114876b0b11c390a56381ad16ebd13914f8d5) |
 | v6 | [`v6`](https://github.com/chainguard-actions/actions-checkout/tree/v6) | [`df4cb1c`](https://github.com/actions/checkout/commit/df4cb1c069e1874edd31b4311f1884172cec0e10) |
 | v6.0.1 | [`v6.0.1`](https://github.com/chainguard-actions/actions-checkout/tree/v6.0.1) | [`8e8c483`](https://github.com/actions/checkout/commit/8e8c483db84b4bee98b60c0593521ed34d9990e8) |
