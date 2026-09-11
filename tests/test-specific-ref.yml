@@ -1,0 +1,44 @@
+name: Test checkout at specific ref
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Checkout a well-known public repo at a specific pinned SHA
+      - id: action
+        uses: .
+        with:
+          repository: actions/hello-world-javascript-action
+          ref: e76147da8e5c81eaf017dede5645551d4b94427b
+          path: pinned-checkout
+
+      - name: Assert directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/pinned-checkout" ]; then
+            echo "FAIL: pinned-checkout directory not found"
+            exit 1
+          fi
+          echo "PASS: directory exists"
+
+      - name: Assert commit output matches pinned SHA
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          EXPECTED="e76147da8e5c81eaf017dede5645551d4b94427b"
+          if [ "$COMMIT" != "$EXPECTED" ]; then
+            echo "FAIL: expected commit '$EXPECTED' but got '$COMMIT'"
+            exit 1
+          fi
+          echo "PASS: commit matches pinned SHA"
+
+      - name: Assert files from that repo exist
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/pinned-checkout/action.yml" ]; then
+            echo "FAIL: action.yml not found in pinned checkout"
+            exit 1
+          fi
+          echo "PASS: action.yml found in pinned checkout"

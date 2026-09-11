@@ -2,7 +2,7 @@
   "owner": "actions",
   "repo": "checkout",
   "version": "v6",
-  "commit_sha": "df4cb1c069e1874edd31b4311f1884172cec0e10",
+  "commit_sha": "d23441a48e516b6c34aea4fa41551a30e30af803",
   "url": "https://github.com/actions/checkout",
   "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
