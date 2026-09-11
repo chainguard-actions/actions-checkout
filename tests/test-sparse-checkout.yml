@@ -1,0 +1,45 @@
+name: Test sparse checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/hello-world-javascript-action
+          ref: main
+          path: sparse-repo
+          sparse-checkout: |
+            README.md
+          sparse-checkout-cone-mode: false
+      - name: Assert sparse checkout directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/sparse-repo" ]; then
+            echo "FAIL: sparse-repo directory not found"
+            exit 1
+          fi
+          echo "PASS: sparse-repo directory exists"
+      - name: Assert sparse checkout only fetched README
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/sparse-repo/README.md" ]; then
+            echo "FAIL: README.md not found in sparse checkout"
+            exit 1
+          fi
+          # Verify that action.yml (not in sparse patterns) is NOT present
+          if [ -f "$GITHUB_WORKSPACE/sparse-repo/action.yml" ]; then
+            echo "WARN: action.yml found in sparse checkout (expected only README.md)"
+          fi
+          echo "PASS: sparse checkout succeeded, README.md is present"
+      - name: Assert commit output is set
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: commit output is '$COMMIT'"

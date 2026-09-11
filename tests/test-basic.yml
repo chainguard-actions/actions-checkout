@@ -1,0 +1,41 @@
+name: Test basic checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/hello-world-javascript-action
+          ref: main
+          path: basic-checkout
+      - name: Assert commit output is set
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: expected commit output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: commit output is '$COMMIT'"
+      - name: Assert ref output is set
+        env:
+          REF: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "ref: $REF"
+          if [ -z "$REF" ]; then
+            echo "FAIL: expected ref output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: ref output is '$REF'"
+      - name: Assert action.yml exists in checkout path
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/basic-checkout/action.yml" ]; then
+            echo "FAIL: action.yml not found in basic-checkout after checkout"
+            exit 1
+          fi
+          echo "PASS: action.yml found in basic-checkout"
