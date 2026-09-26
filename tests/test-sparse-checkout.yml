@@ -1,0 +1,54 @@
+name: Test sparse checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-sparse
+          sparse-checkout: |
+            action.yml
+            README.md
+
+      - name: Assert sparse checkout directory exists
+        run: |
+          echo "Checking checkout-sparse directory..."
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-sparse" ]; then
+            echo "FAIL: checkout-sparse directory not found"
+            exit 1
+          fi
+          echo "PASS: directory exists"
+
+      - name: Assert action.yml is present (included in sparse checkout)
+        run: |
+          echo "Checking for action.yml..."
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-sparse/action.yml" ]; then
+            echo "FAIL: action.yml not found in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: action.yml found"
+
+      - name: Assert it is a git repository
+        run: |
+          if ! git -C "$GITHUB_WORKSPACE/checkout-sparse" rev-parse --git-dir > /dev/null 2>&1; then
+            echo "FAIL: checkout-sparse is not a git repository"
+            exit 1
+          fi
+          echo "PASS: is a git repository"
+
+      - name: Assert sparse checkout is configured
+        run: |
+          SPARSE=$(git -C "$GITHUB_WORKSPACE/checkout-sparse" config core.sparseCheckout 2>/dev/null || echo "false")
+          echo "sparse checkout config: $SPARSE"
+          if [ "$SPARSE" != "true" ]; then
+            echo "FAIL: expected core.sparseCheckout=true, got '$SPARSE'"
+            exit 1
+          fi
+          echo "PASS: sparse checkout is configured"
