@@ -1,0 +1,40 @@
+name: Test basic checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-target
+
+      - name: Assert checkout directory exists
+        run: |
+          echo "Checking checkout-target directory..."
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-target" ]; then
+            echo "FAIL: checkout-target directory not found"
+            exit 1
+          fi
+          echo "PASS: directory exists"
+
+      - name: Assert action.yml was checked out
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-target/action.yml" ]; then
+            echo "FAIL: action.yml not found in checkout-target"
+            exit 1
+          fi
+          echo "PASS: action.yml found"
+
+      - name: Assert it is a git repository
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-target/.git" ]; then
+            echo "FAIL: .git directory not found — not a git repo"
+            exit 1
+          fi
+          echo "PASS: .git directory found"

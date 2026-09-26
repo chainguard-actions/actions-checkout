@@ -1,0 +1,45 @@
+name: Test checkout at specific ref
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: de0fac2e4500dabe0009e67214ff5f5447ce83dd
+          path: checkout-ref
+          fetch-depth: 1
+
+      - name: Assert checkout directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-ref" ]; then
+            echo "FAIL: checkout-ref directory not found"
+            exit 1
+          fi
+          echo "PASS: directory exists"
+
+      - name: Assert HEAD is at the expected SHA
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-ref"
+          ACTUAL_SHA=$(git rev-parse HEAD)
+          EXPECTED_SHA="de0fac2e4500dabe0009e67214ff5f5447ce83dd"
+          echo "actual SHA: $ACTUAL_SHA"
+          echo "expected SHA: $EXPECTED_SHA"
+          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+            echo "FAIL: HEAD is at $ACTUAL_SHA, expected $EXPECTED_SHA"
+            exit 1
+          fi
+          echo "PASS: HEAD is at the expected SHA"
+
+      - name: Assert action.yml exists at this ref
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-ref/action.yml" ]; then
+            echo "FAIL: action.yml not found at the specified ref"
+            exit 1
+          fi
+          echo "PASS: action.yml found"
