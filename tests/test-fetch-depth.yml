@@ -1,0 +1,56 @@
+name: Test checkout with full history (fetch-depth 0)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Test shallow checkout (default fetch-depth 1)
+        id: shallow
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-shallow
+          fetch-depth: 1
+      - name: Assert shallow checkout has limited history
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-shallow"
+          DEPTH=$(git log --oneline | wc -l | tr -d ' ')
+          echo "Shallow history depth: $DEPTH"
+          # With fetch-depth=1, we expect exactly 1 commit
+          if [ "$DEPTH" -ne 1 ]; then
+            echo "FAIL: expected 1 commit for shallow clone, got $DEPTH"
+            exit 1
+          fi
+          echo "PASS: shallow clone has $DEPTH commit(s)"
+      - name: Test full history checkout (fetch-depth 0)
+        id: full
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-full
+          fetch-depth: 0
+      - name: Assert full checkout output commit is set
+        env:
+          OUT_COMMIT: ${{ steps.full.outputs.commit }}
+        run: |
+          echo "commit: $OUT_COMMIT"
+          if [ -z "$OUT_COMMIT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          echo "PASS: commit SHA is '$OUT_COMMIT'"
+      - name: Assert full history checkout has many commits
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-full"
+          DEPTH=$(git log --oneline | wc -l | tr -d ' ')
+          echo "Full history depth: $DEPTH"
+          # With fetch-depth=0, we expect many commits (actions/checkout has hundreds)
+          if [ "$DEPTH" -lt 10 ]; then
+            echo "FAIL: expected many commits for full clone, got $DEPTH"
+            exit 1
+          fi
+          echo "PASS: full clone has $DEPTH commits"

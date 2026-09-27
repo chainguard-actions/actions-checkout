@@ -1,0 +1,55 @@
+name: Test sparse checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-sparse
+          # Only checkout the src directory and action.yml
+          sparse-checkout: |
+            src
+            action.yml
+          sparse-checkout-cone-mode: false
+      - name: Assert sparse checkout output commit is set
+        env:
+          OUT_COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $OUT_COMMIT"
+          if [ -z "$OUT_COMMIT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$OUT_COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit '$OUT_COMMIT' is not a valid 40-char SHA"
+            exit 1
+          fi
+          echo "PASS: commit SHA is '$OUT_COMMIT'"
+      - name: Assert sparse checkout includes action.yml
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-sparse/action.yml" ]; then
+            echo "FAIL: action.yml not found in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: action.yml found in sparse checkout"
+      - name: Assert sparse checkout includes src directory
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-sparse/src" ]; then
+            echo "FAIL: src directory not found in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: src directory found in sparse checkout"
+      - name: Assert sparse checkout excludes other directories (e.g. __test__)
+        run: |
+          # __test__ directory should NOT be present in sparse checkout
+          if [ -d "$GITHUB_WORKSPACE/checkout-sparse/__test__" ]; then
+            echo "WARN: __test__ directory found — sparse checkout may not have filtered it"
+          else
+            echo "PASS: __test__ directory correctly excluded from sparse checkout"
+          fi

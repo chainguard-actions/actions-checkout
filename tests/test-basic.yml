@@ -1,0 +1,46 @@
+name: Test basic checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-target
+      - name: Assert checkout output ref is set
+        env:
+          OUT_REF: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "ref output: $OUT_REF"
+          if [ -z "$OUT_REF" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is '$OUT_REF'"
+      - name: Assert checkout output commit is set
+        env:
+          OUT_COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit output: $OUT_COMMIT"
+          if [ -z "$OUT_COMMIT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          # Commit SHA should be 40 hex chars
+          if ! echo "$OUT_COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit '$OUT_COMMIT' is not a valid 40-char SHA"
+            exit 1
+          fi
+          echo "PASS: commit SHA is '$OUT_COMMIT'"
+      - name: Assert checked-out files exist
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-target/action.yml" ]; then
+            echo "FAIL: expected action.yml not found in checkout-target"
+            exit 1
+          fi
+          echo "PASS: action.yml found in checkout-target"

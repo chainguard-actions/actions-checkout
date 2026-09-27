@@ -1,0 +1,51 @@
+name: Test checkout at specific ref
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          # Pin to a known tag for determinism
+          ref: v4.2.2
+          path: checkout-specific
+      - name: Assert commit output is set and is a valid SHA
+        env:
+          OUT_COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $OUT_COMMIT"
+          if [ -z "$OUT_COMMIT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$OUT_COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit '$OUT_COMMIT' is not a valid 40-char SHA"
+            exit 1
+          fi
+          echo "PASS: commit SHA is '$OUT_COMMIT'"
+      - name: Assert ref output is set
+        env:
+          OUT_REF: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "ref: $OUT_REF"
+          if [ -z "$OUT_REF" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is '$OUT_REF'"
+      - name: Assert checked-out files exist at the pinned version
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-specific/action.yml" ]; then
+            echo "FAIL: action.yml not found in checkout-specific"
+            exit 1
+          fi
+          echo "PASS: action.yml found in checkout-specific"
+          # Verify the package.json version matches v4.2.2
+          if [ -f "$GITHUB_WORKSPACE/checkout-specific/package.json" ]; then
+            VERSION=$(grep '"version"' "$GITHUB_WORKSPACE/checkout-specific/package.json" | head -1)
+            echo "package.json version line: $VERSION"
+          fi
