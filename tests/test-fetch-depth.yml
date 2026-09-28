@@ -1,0 +1,26 @@
+name: Test fetch-depth full history
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-full-history
+          fetch-depth: 0
+      - name: Assert full history was fetched
+        run: |
+          echo "Checking git history depth..."
+          cd "$GITHUB_WORKSPACE/checkout-full-history"
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          echo "Commit count: $COMMIT_COUNT"
+          if [ "$COMMIT_COUNT" -le 1 ]; then
+            echo "FAIL: expected more than 1 commit with fetch-depth: 0, got $COMMIT_COUNT"
+            exit 1
+          fi
+          echo "PASS: full history fetched with $COMMIT_COUNT commits"
