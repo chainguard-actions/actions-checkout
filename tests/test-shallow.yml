@@ -1,0 +1,41 @@
+name: Test shallow checkout with fetch-depth 1
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-shallow
+          fetch-depth: 1
+      - name: Assert shallow checkout succeeded
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-shallow"
+          if ! git rev-parse --git-dir > /dev/null 2>&1; then
+            echo "FAIL: checkout-shallow is not a valid git repository"
+            exit 1
+          fi
+          echo "PASS: valid git repository"
+      - name: Assert only one commit is fetched
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-shallow"
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          echo "Total commits visible: $COMMIT_COUNT"
+          if [ "$COMMIT_COUNT" -ne 1 ]; then
+            echo "FAIL: expected exactly 1 commit with fetch-depth=1, got $COMMIT_COUNT"
+            exit 1
+          fi
+          echo "PASS: shallow clone with exactly 1 commit"
+      - name: Assert shallow file exists
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-shallow"
+          if [ ! -f ".git/shallow" ]; then
+            echo "FAIL: .git/shallow file not found, expected a shallow clone"
+            exit 1
+          fi
+          echo "PASS: .git/shallow file present confirming shallow clone"

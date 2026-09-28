@@ -1,0 +1,47 @@
+name: Test checkout into custom path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: custom/nested/path
+      - name: Assert files exist in custom nested path
+        run: |
+          TARGET="$GITHUB_WORKSPACE/custom/nested/path"
+          echo "Checking path: $TARGET"
+          if [ ! -d "$TARGET" ]; then
+            echo "FAIL: custom/nested/path directory not found"
+            exit 1
+          fi
+          if [ ! -f "$TARGET/action.yml" ]; then
+            echo "FAIL: action.yml not found in custom/nested/path"
+            exit 1
+          fi
+          echo "PASS: files found in custom/nested/path"
+      - name: Assert workspace root is not overwritten
+        run: |
+          # The workspace root should still be the original action repo
+          if [ ! -f "$GITHUB_WORKSPACE/action.yml" ]; then
+            echo "FAIL: workspace root action.yml missing - workspace may have been overwritten"
+            exit 1
+          fi
+          echo "PASS: workspace root is intact"
+      - name: Assert git repo in custom path is valid
+        run: |
+          cd "$GITHUB_WORKSPACE/custom/nested/path"
+          BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "detached")
+          echo "Branch/ref: $BRANCH"
+          COMMIT=$(git rev-parse HEAD)
+          echo "HEAD commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: could not determine HEAD commit in custom path"
+            exit 1
+          fi
+          echo "PASS: valid git repo at $COMMIT"
