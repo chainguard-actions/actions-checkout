@@ -1,0 +1,55 @@
+name: Test sparse checkout of specific paths
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: checkout
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: sparse-target
+          sparse-checkout: |
+            action.yml
+            package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Assert sparse checkout directory exists
+        run: |
+          echo "Checking for sparse-target directory..."
+          if [ ! -d "$GITHUB_WORKSPACE/sparse-target" ]; then
+            echo "FAIL: sparse-target directory not found"
+            exit 1
+          fi
+          echo "PASS: sparse-target directory exists"
+
+      - name: Assert action.yml is present (included in sparse checkout)
+        run: |
+          echo "Checking for action.yml in sparse-target..."
+          if [ ! -f "$GITHUB_WORKSPACE/sparse-target/action.yml" ]; then
+            echo "FAIL: action.yml not found in sparse-target"
+            exit 1
+          fi
+          echo "PASS: action.yml found in sparse checkout"
+
+      - name: Assert package.json is present (included in sparse checkout)
+        run: |
+          echo "Checking for package.json in sparse-target..."
+          if [ ! -f "$GITHUB_WORKSPACE/sparse-target/package.json" ]; then
+            echo "FAIL: package.json not found in sparse-target"
+            exit 1
+          fi
+          echo "PASS: package.json found in sparse checkout"
+
+      - name: Assert src directory is NOT present (excluded from sparse checkout)
+        run: |
+          echo "Checking that src/ directory is excluded from sparse checkout..."
+          if [ -d "$GITHUB_WORKSPACE/sparse-target/src" ]; then
+            echo "FAIL: src/ directory should not be present in sparse checkout"
+            exit 1
+          fi
+          echo "PASS: src/ directory correctly excluded from sparse checkout"

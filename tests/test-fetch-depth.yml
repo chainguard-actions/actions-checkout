@@ -1,0 +1,47 @@
+name: Test checkout with full history (fetch-depth 0)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: checkout
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: full-history-target
+          fetch-depth: 0
+
+      - name: Assert checkout directory exists
+        run: |
+          echo "Checking for full-history-target directory..."
+          if [ ! -d "$GITHUB_WORKSPACE/full-history-target" ]; then
+            echo "FAIL: full-history-target directory not found"
+            exit 1
+          fi
+          echo "PASS: full-history-target directory exists"
+
+      - name: Assert full history is present (more than 1 commit)
+        run: |
+          cd "$GITHUB_WORKSPACE/full-history-target"
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          echo "Commit count: $COMMIT_COUNT"
+          if [ "$COMMIT_COUNT" -le 1 ]; then
+            echo "FAIL: expected more than 1 commit with fetch-depth=0, got $COMMIT_COUNT"
+            exit 1
+          fi
+          echo "PASS: full history present with $COMMIT_COUNT commits"
+
+      - name: Assert git log shows multiple entries
+        run: |
+          cd "$GITHUB_WORKSPACE/full-history-target"
+          LOG_LINES=$(git log --oneline | wc -l)
+          echo "Log lines: $LOG_LINES"
+          if [ "$LOG_LINES" -le 1 ]; then
+            echo "FAIL: expected multiple log entries, got $LOG_LINES"
+            exit 1
+          fi
+          echo "PASS: git log shows $LOG_LINES commits"
