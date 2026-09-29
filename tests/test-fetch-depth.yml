@@ -1,0 +1,42 @@
+name: Test fetch-depth full history
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-full
+          fetch-depth: 0
+
+      - name: Assert full history is present
+        run: |
+          cd "$GITHUB_WORKSPACE/checkout-full"
+          COUNT=$(git log --oneline | wc -l)
+          echo "commit count: $COUNT"
+          if [ "$COUNT" -lt 10 ]; then
+            echo "FAIL: expected more than 10 commits with full history, got $COUNT"
+            exit 1
+          fi
+          echo "PASS: full history present with $COUNT commits"
+
+      - name: Assert commit output is a valid SHA
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $COMMIT"
+            exit 1
+          fi
+          echo "PASS: commit output is a valid SHA"
