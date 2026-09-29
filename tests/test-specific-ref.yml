@@ -1,0 +1,53 @@
+name: Test checkout at specific ref
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          repository: actions/checkout
+          # Pin to a known tag for reproducibility
+          ref: v4.2.2
+          path: checkout-pinned
+      - name: Assert checkout directory exists
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/checkout-pinned" ]; then
+            echo "FAIL: checkout-pinned directory not found"
+            exit 1
+          fi
+          echo "PASS: directory exists"
+      - name: Assert action.yml exists
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/checkout-pinned/action.yml" ]; then
+            echo "FAIL: action.yml not found"
+            exit 1
+          fi
+          echo "PASS: action.yml found"
+      - name: Assert commit output is set
+        env:
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "commit: $COMMIT"
+          if [ -z "$COMMIT" ]; then
+            echo "FAIL: commit output is empty"
+            exit 1
+          fi
+          if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "FAIL: commit output does not look like a SHA: $COMMIT"
+            exit 1
+          fi
+          echo "PASS: commit is a valid SHA"
+      - name: Assert ref output matches requested tag
+        env:
+          REF: ${{ steps.action.outputs.ref }}
+        run: |
+          echo "ref: $REF"
+          if [ -z "$REF" ]; then
+            echo "FAIL: ref output is empty"
+            exit 1
+          fi
+          echo "PASS: ref output is set"
