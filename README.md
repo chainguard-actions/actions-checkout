@@ -17,6 +17,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v4.2.2 | [`v4.2.2`](https://github.com/chainguard-actions/actions-checkout/tree/v4.2.2) | [`11bd719`](https://github.com/actions/checkout/commit/11bd71901bbe5b1630ceea73d27597364c9af683) |
 | v4.3.0 | [`v4.3.0`](https://github.com/chainguard-actions/actions-checkout/tree/v4.3.0) | [`08eba0b`](https://github.com/actions/checkout/commit/08eba0b27e820071cde6df949e0beb9ba4906955) |
 | v4.3.1 | [`v4.3.1`](https://github.com/chainguard-actions/actions-checkout/tree/v4.3.1) | [`34e1148`](https://github.com/actions/checkout/commit/34e114876b0b11c390a56381ad16ebd13914f8d5) |
+| v4.4.0 | [`v4.4.0`](https://github.com/chainguard-actions/actions-checkout/tree/v4.4.0) | [`11d5960`](https://github.com/actions/checkout/commit/11d5960a326750d5838078e36cf38b85af677262) |
 | v5.0.0 | [`v5.0.0`](https://github.com/chainguard-actions/actions-checkout/tree/v5.0.0) | [`08c6903`](https://github.com/actions/checkout/commit/08c6903cd8c0fde910a37f88322edcfb5dd907a8) |
 | v5.0.1 | [`v5.0.1`](https://github.com/chainguard-actions/actions-checkout/tree/v5.0.1) | [`93cb6ef`](https://github.com/actions/checkout/commit/93cb6efe18208431cddfb8368fd83d5badbf9bfd) |
 | v5.1.0 | [`v5.1.0`](https://github.com/chainguard-actions/actions-checkout/tree/v5.1.0) | [`fbc6f39`](https://github.com/actions/checkout/commit/fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09) |
