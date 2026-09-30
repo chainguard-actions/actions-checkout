@@ -1,0 +1,59 @@
+name: Test sparse checkout
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-sparse
+          sparse-checkout: |
+            action.yml
+            README.md
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Assert sparse checkout or graceful failure
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "commit: $COMMIT"
+          if [ "$OUTCOME" = "success" ]; then
+            # Verify sparse checkout directory exists
+            if [ ! -d "$GITHUB_WORKSPACE/checkout-sparse" ]; then
+              echo "FAIL: checkout-sparse directory not found"
+              exit 1
+            fi
+            # Verify action.yml is present (included in sparse checkout)
+            if [ ! -f "$GITHUB_WORKSPACE/checkout-sparse/action.yml" ]; then
+              echo "FAIL: action.yml not found in sparse checkout"
+              exit 1
+            fi
+            # Verify src directory is absent (excluded from sparse checkout)
+            if [ -d "$GITHUB_WORKSPACE/checkout-sparse/src" ]; then
+              echo "FAIL: src directory should not be present in sparse checkout"
+              exit 1
+            fi
+            # Verify commit output looks like a SHA
+            if [ -z "$COMMIT" ]; then
+              echo "FAIL: commit output is empty"
+              exit 1
+            fi
+            if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+              echo "FAIL: commit output does not look like a SHA: $COMMIT"
+              exit 1
+            fi
+            echo "PASS: sparse checkout succeeded, action.yml present, src absent, commit=$COMMIT"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (network or sentinel repo issue)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

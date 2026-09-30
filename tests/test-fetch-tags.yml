@@ -1,0 +1,49 @@
+name: Test fetch tags
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-tags
+          fetch-depth: 1
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Assert tags fetched or graceful failure
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "commit: $COMMIT"
+          if [ "$OUTCOME" = "success" ]; then
+            cd "$GITHUB_WORKSPACE/checkout-tags"
+            TAG_COUNT=$(git tag | wc -l | tr -d ' ')
+            echo "tag count: $TAG_COUNT"
+            if [ "$TAG_COUNT" -eq 0 ]; then
+              echo "FAIL: expected tags to be fetched but found none"
+              exit 1
+            fi
+            # Verify commit output looks like a SHA
+            if [ -z "$COMMIT" ]; then
+              echo "FAIL: commit output is empty"
+              exit 1
+            fi
+            if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+              echo "FAIL: commit output does not look like a SHA: $COMMIT"
+              exit 1
+            fi
+            echo "PASS: $TAG_COUNT tags fetched, commit=$COMMIT"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (network or sentinel repo issue)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

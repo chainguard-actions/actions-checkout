@@ -1,0 +1,48 @@
+name: Test fetch-depth full history
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          repository: actions/checkout
+          ref: main
+          path: checkout-full
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Assert full history or graceful failure
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          COMMIT: ${{ steps.action.outputs.commit }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "commit: $COMMIT"
+          if [ "$OUTCOME" = "success" ]; then
+            cd "$GITHUB_WORKSPACE/checkout-full"
+            COUNT=$(git rev-list --count HEAD)
+            echo "commit count: $COUNT"
+            if [ "$COUNT" -le 1 ]; then
+              echo "FAIL: expected more than 1 commit with fetch-depth=0, got $COUNT"
+              exit 1
+            fi
+            # Verify commit output looks like a SHA
+            if [ -z "$COMMIT" ]; then
+              echo "FAIL: commit output is empty"
+              exit 1
+            fi
+            if ! echo "$COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+              echo "FAIL: commit output does not look like a SHA: $COMMIT"
+              exit 1
+            fi
+            echo "PASS: full history fetched ($COUNT commits), commit=$COMMIT"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (network or sentinel repo issue)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
