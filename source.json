@@ -4,8 +4,13 @@
   "version": "v4.3.1",
   "commit_sha": "34e114876b0b11c390a56381ad16ebd13914f8d5",
   "url": "https://github.com/actions/checkout",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/actions/checkout/v4.3.1/sha256-a27d2dbcf50f08d2191b5d287f8b3b65f8e1cbb34f09474afc65a6eb82b1e24a.tar.gz",
+    "sha256": "a27d2dbcf50f08d2191b5d287f8b3b65f8e1cbb34f09474afc65a6eb82b1e24a",
+    "size_bytes": 314328
+  }
 }
