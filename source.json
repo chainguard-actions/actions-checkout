@@ -1,6 +1,16 @@
 {
   "owner": "actions",
   "repo": "checkout",
-  "version": "",
-  "url": "https://github.com/actions/checkout"
+  "version": "v6.1.0",
+  "commit_sha": "d23441a48e516b6c34aea4fa41551a30e30af803",
+  "url": "https://github.com/actions/checkout",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
+  "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
+  "test_agent_version": "2",
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/actions/checkout/v6.1.0/sha256-c5469e05a0303efb708626805f1c38b78db512ca2b0a0b90cfd2ca80d9ed7440.tar.gz",
+    "sha256": "c5469e05a0303efb708626805f1c38b78db512ca2b0a0b90cfd2ca80d9ed7440",
+    "size_bytes": 317659
+  }
 }
