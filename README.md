@@ -8,6 +8,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit | Hardening report |
 |---------|-----|-----------------|------------------|
+| sha-85e6279cec87321a52edac9c87bce653a07cf6c2 | [`sha-85e6279cec87321a52edac9c87bce653a07cf6c2`](https://github.com/chainguard-actions/actions-checkout/tree/sha-85e6279cec87321a52edac9c87bce653a07cf6c2) | [`85e6279`](https://github.com/actions/checkout/commit/85e6279cec87321a52edac9c87bce653a07cf6c2) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-checkout/blob/sha-85e6279cec87321a52edac9c87bce653a07cf6c2/HARDENING.md) |
 | v2.7.0 | [`v2.7.0`](https://github.com/chainguard-actions/actions-checkout/tree/v2.7.0) | [`ee0669b`](https://github.com/actions/checkout/commit/ee0669bd1cc54295c223e0bb666b733df41de1c5) | — |
 | v2.8.0 | [`v2.8.0`](https://github.com/chainguard-actions/actions-checkout/tree/v2.8.0) | [`0717577`](https://github.com/actions/checkout/commit/0717577d45739eb3c851188b29f50ed6c0b2194e) | — |
 | v3.6.0 | [`v3.6.0`](https://github.com/chainguard-actions/actions-checkout/tree/v3.6.0) | [`f43a0e5`](https://github.com/actions/checkout/commit/f43a0e5ff2bd294095638e18286ca9a3d1956744) | — |
@@ -25,6 +26,8 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v6.0.1 | [`v6.0.1`](https://github.com/chainguard-actions/actions-checkout/tree/v6.0.1) | [`8e8c483`](https://github.com/actions/checkout/commit/8e8c483db84b4bee98b60c0593521ed34d9990e8) | — |
 | v6.0.2 | [`v6.0.2`](https://github.com/chainguard-actions/actions-checkout/tree/v6.0.2) | [`de0fac2`](https://github.com/actions/checkout/commit/de0fac2e4500dabe0009e67214ff5f5447ce83dd) | — |
 | v6.0.3 | [`v6.0.3`](https://github.com/chainguard-actions/actions-checkout/tree/v6.0.3) | [`df4cb1c`](https://github.com/actions/checkout/commit/df4cb1c069e1874edd31b4311f1884172cec0e10) | — |
+| v6.1.0 | [`v6.1.0`](https://github.com/chainguard-actions/actions-checkout/tree/v6.1.0) | [`d23441a`](https://github.com/actions/checkout/commit/d23441a48e516b6c34aea4fa41551a30e30af803) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-checkout/blob/v6.1.0/HARDENING.md) |
+| v6.1.0-r0 | [`v6.1.0-r0`](https://github.com/chainguard-actions/actions-checkout/tree/v6.1.0-r0) | [`d23441a`](https://github.com/actions/checkout/commit/d23441a48e516b6c34aea4fa41551a30e30af803) | — |
 | v7.0.0 | [`v7.0.0`](https://github.com/chainguard-actions/actions-checkout/tree/v7.0.0) | [`9c091bb`](https://github.com/actions/checkout/commit/9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0) | — |
 | v7.0.1 | [`v7.0.1`](https://github.com/chainguard-actions/actions-checkout/tree/v7.0.1) | [`3d3c42e`](https://github.com/actions/checkout/commit/3d3c42e5aac5ba805825da76410c181273ba90b1) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-checkout/blob/v7.0.1/HARDENING.md) |
 
